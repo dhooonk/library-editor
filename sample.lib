@@ -1,0 +1,31 @@
+* ============================================================
+* Sample Smart Spice Library File
+* ============================================================
+
+.PARAM tox_global=1.2e-8
+
+.LIB NMOS_LIB
+
+.PARAM vth_offset=0.05
+
+* ---- N-Channel MOSFET ----
+.MODEL NMOS_V1 NMOS
++ LEVEL=3 VTH0=0.45 TOX={tox_global} XJ=1.5e-7
++ UA=2.25e-9 UB=5.87e-19 UC=-4.65e-11
++ K1=0.559 K2=-0.04 K3=80.0
++ VSAT=1.0e5 RDSW=200 PRWG=0.02
+
+* ---- N-Channel MOSFET v2 (with expr) ----
+.MODEL NMOS_V2 NMOS
++ LEVEL=3 VTH0={vth_offset+0.40} TOX={tox_global*1.05}
++ K1=0.55 K2=-0.03
+
+.ENDL NMOS_LIB
+
+.LIB PMOS_LIB
+
+.MODEL PMOS_V1 PMOS
++ LEVEL=3 VTH0=-0.45 TOX=1.5e-8
++ K1=0.48 K2=-0.01 VSAT=0.8e5
+
+.ENDL PMOS_LIB
