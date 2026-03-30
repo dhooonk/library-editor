@@ -38,9 +38,10 @@ class ModelEntry:
     예:
       * 이것은 NMOS 모델입니다 (comment_lines)
       .MODEL NMOS_1 NMOS
-      + (VTH0=0.45 TOX=1.2e-8)
-      
+      + (VTH0=0.45 TOX=1.2e-8)  $ inline comment
+
     이 구조에서는 원래 모델에 괄호 ( )가 씌워져 있었는지를 파악하여 다시 저장할 때 원본 포맷을 유지합니다.
+    또한 파라미터 줄(+ ...) 끝에 달린 인라인 주석($ 이후 텍스트)도 보존합니다.
     """
     name: str                            # 모델명 (예: "NMOS_1")
     model_type: str                      # 모델 타입 (예: "NMOS" 또는 "PMOS")
@@ -49,6 +50,10 @@ class ModelEntry:
     comment_lines: List[str] = field(default_factory=list)  # 모델 선언 윗부분에 적혀있던 주석 목록
     open_paren: bool = False             # 타입명 뒤 또는 파라미터 리스트 맨 앞에 여는 형식의 괄호 '(' 가 있었는지 여부
     close_paren: bool = False            # 파라미터 리스트 맨 끝에 닫는 형식의 괄호 ')' 가 있었는지 여부
+    # continuation_comments: 각 '+' 파라미터 줄별 인라인 주석 목록
+    # 키: 해당 continuation line 인덱스(0-based), 값: '$ ...' 형태의 주석 문자열
+    # 예: {0: '$ level and threshold', 1: '$ mobility params'}
+    continuation_comments: dict = field(default_factory=dict)
 
     def copy(self) -> "ModelEntry":
         return ModelEntry(
@@ -57,7 +62,8 @@ class ModelEntry:
             params=OrderedDict(self.params),
             comment_lines=list(self.comment_lines),
             open_paren=self.open_paren,
-            close_paren=self.close_paren
+            close_paren=self.close_paren,
+            continuation_comments=dict(self.continuation_comments)
         )
 
 

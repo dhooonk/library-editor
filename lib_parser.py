@@ -17,13 +17,25 @@ from typing import List, Tuple
 
 from data_model import LibFile, LibBlock, ModelEntry, ParamEntry, DirectiveEntry
 
-# 인라인 주석 제거 ($ 이후 제거), 문자열 리터럴 내부 보호
+# 인라인 주석 ($ 이후) 를 추출하는 정규식
 _INLINE_COMMENT_RE = re.compile(r'\$.*$')
+
+# continuation line (+) 내 첫 번째 '파라미터명=' 을 찾는 정규식
+_FIRST_PARAM_RE = re.compile(r'(\w+)\s*=')
 
 
 def _strip_inline_comment(line: str) -> str:
-    """$ 이후의 인라인 주석을 제거합니다 (문자열 외부에서만)."""
+    """$ 이후의 인라인 주석을 제거하고 나머지 텍스트를 반환합니다."""
     return _INLINE_COMMENT_RE.sub('', line).rstrip()
+
+
+def _extract_inline_comment(line: str) -> str:
+    """
+    줄에서 $ 이후의 인라인 주석 문자열을 반환합니다.
+    주석이 없으면 빈 문자열을 반환합니다.
+    """
+    m = _INLINE_COMMENT_RE.search(line)
+    return m.group(0).strip() if m else ''
 
 
 def _parse_param_pairs(text: str) -> tuple[OrderedDict, bool, bool]:
@@ -76,28 +88,53 @@ def _parse_param_pairs(text: str) -> tuple[OrderedDict, bool, bool]:
     return params, open_paren, close_paren
 
 
-def _join_continuation_lines(raw_lines: List[str]) -> List[str]:
+def _join_continuation_lines(raw_lines: List[str]) -> Tuple[List[str], dict]:
     """
     + 로 시작하는 continuation line을 이전 줄에 합칩니다.
     주석 줄(* 로 시작)은 그대로 유지합니다.
+
+    각 '+' continuation line 끝에 달린 인라인 주석($ ...)을 파라미터 내용과
+    분리하여, 그 줄의 첫 번째 파라미터 이름(대문자)을 키로 저장합니다.
+
+    파라미터 이름을 키로 사용하면, 저장 시 80자 기준으로 줄이 재분배되더라도
+    해당 파라미터가 처음 출현하는 줄 끝에 주석을 정확히 복원할 수 있습니다.
+
+    반환값:
+        (joined_lines, cont_comment_map)
+        - joined_lines     : continuation 처리된 줄 목록
+        - cont_comment_map : { "첫_파라미터명(대문자)": "$ 주석 문자열" }
     """
     joined: List[str] = []
+    # { 첫 파라미터명(대문자) → 인라인 주석 문자열 }
+    cont_comment_map: dict = {}
+
     for raw in raw_lines:
         stripped = raw.strip()
         if not stripped:
             joined.append('')
             continue
         if stripped.startswith('+'):
-            # continuation: 이전 실질 내용 줄에 이어 붙임
-            rest = stripped[1:].strip()
-            # 이전 줄을 찾아서 이어붙이기
+            # continuation line: $ 인라인 주석을 먼저 분리한 뒤 내용만 합치기
+            inline_comment = _extract_inline_comment(stripped)
+            rest = _strip_inline_comment(stripped[1:].strip())
+
             if joined:
                 joined[-1] = joined[-1].rstrip() + ' ' + rest
             else:
                 joined.append(rest)
+
+            # 주석이 있을 때: 이 continuation 줄의 첫 번째 파라미터명을 키로 저장
+            if inline_comment and rest:
+                clean_rest = rest.strip().lstrip('(')  # 여는 괄호 제거 후 탐색
+                m = _FIRST_PARAM_RE.match(clean_rest)
+                if m:
+                    key = m.group(1).upper()  # 대문자로 통일
+                    # 동일 키가 이미 있으면 덮어쓰지 않음 (첫 번째 등장 우선)
+                    cont_comment_map.setdefault(key, inline_comment)
         else:
             joined.append(stripped)
-    return joined
+
+    return joined, cont_comment_map
 
 
 def parse_lib(filepath: str) -> LibFile:
@@ -109,8 +146,8 @@ def parse_lib(filepath: str) -> LibFile:
 
     lib_file = LibFile(filepath=filepath)
 
-    # 1단계: continuation line 합치기
-    lines = _join_continuation_lines(raw_lines)
+    # 1단계: continuation line 합치기 (+ 줄을 이전 줄에 합치고, 인라인 주석은 파라미터명 키로 보존)
+    lines, cont_comment_map = _join_continuation_lines(raw_lines)
 
     # 2단계: 순차 파싱
     current_lib: LibBlock = None
@@ -190,14 +227,24 @@ def parse_lib(filepath: str) -> LibFile:
                 
             # 내부 함수 호출로 키워드 매칭 및 후행 괄호 파싱
             model_params, p_open, p_close = _parse_param_pairs(param_text)
-            
+
+            # cont_comment_map: { "파라미터명(대문자)": "$ 주석" } 중에서
+            # 이 모델에 속한 파라미터명만 필터링하여 continuation_comments 구성.
+            # 사용된 키는 맵에서 제거하여 다음 모델에 주석이 누출되지 않도록 함.
+            param_keys_upper = {p.upper() for p in model_params.keys()}
+            model_cont_comments = {}
+            for k in list(cont_comment_map.keys()):
+                if k in param_keys_upper:
+                    model_cont_comments[k] = cont_comment_map.pop(k)
+
             current_model = ModelEntry(
                 name=model_name,
                 model_type=model_type,
                 params=model_params,
                 comment_lines=pending_comments,
                 open_paren=m_open_paren or p_open,
-                close_paren=p_close
+                close_paren=p_close,
+                continuation_comments=model_cont_comments
             )
             pending_comments = []
             if current_lib is not None:
