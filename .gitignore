@@ -1,0 +1,16 @@
+# Claude/AI agent 내부 파일 — 절대 추적하지 않음
+CLAUDE.md
+AGENTS.md
+
+# Python 캐시
+__pycache__/
+*.pyc
+*.pyo
+
+# PyInstaller 빌드 산출물
+build/
+dist/
+*.spec.bak
+
+# macOS
+.DS_Store

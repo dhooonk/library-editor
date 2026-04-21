@@ -24,6 +24,10 @@ Python 표준 라이브러리 Tkinter 기반
 """
 import os
 import sys
+
+# src/ 폴더의 모듈을 임포트할 수 있도록 경로 추가
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "src"))
+
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox, simpledialog
 from collections import OrderedDict
@@ -48,11 +52,11 @@ THEMES = {
         "BG_ROW_EVN": "#262626",   # 테이블 짝수 행 배경
         "FG_MAIN":    "#d4d4d4",   # 기본 텍스트 색상
         "FG_DIM":     "#707070",   # 보조(흐린) 텍스트 색상
-        "FG_ACCENT":  "#9e9e9e",   # 강조 텍스트 색상 (헤더 등)
-        "FG_GREEN":   "#a0a0a0",   # 숫자 리터럴 색상 (초록 계열)
-        "FG_RED":     "#c0706a",   # 위험/삭제 버튼 텍스트 (붉은 계열)
-        "FG_YELLOW":  "#b0a070",   # 변수 참조 색상 (노랑 계열)
-        "FG_PURPLE":  "#9090b0",   # 수식 색상 (보라 계열)
+        "FG_ACCENT":  "#b0b0b0",   # 강조 텍스트 색상 (헤더 등)
+        "FG_GREEN":   "#6bcb77",   # 숫자 리터럴 (밝은 라임 초록)
+        "FG_RED":     "#ff6b6b",   # 위험/삭제 버튼 텍스트 (선명한 빨강)
+        "FG_YELLOW":  "#ffd166",   # 변수 참조 (선명한 노랑)
+        "FG_PURPLE":  "#c77dff",   # 수식 (선명한 보라)
         "SEL_BG":     "#3a3a3a",   # 선택(Selection) 배경
         "BORDER":     "#444444",   # 경계선 색상
     },
@@ -64,11 +68,11 @@ THEMES = {
         "BG_ROW_EVN": "#ffffff",   # 테이블 짝수 행 배경
         "FG_MAIN":    "#2c2c2c",   # 기본 텍스트 (어두운 색)
         "FG_DIM":     "#888888",   # 보조 텍스트
-        "FG_ACCENT":  "#555555",   # 강조 텍스트
-        "FG_GREEN":   "#3a7a3a",   # 숫자 리터럴 (초록)
-        "FG_RED":     "#a03030",   # 위험 요소 (붉은색)
-        "FG_YELLOW":  "#7a6020",   # 변수 참조 (갈색 계열)
-        "FG_PURPLE":  "#505080",   # 수식 (짙은 보라)
+        "FG_ACCENT":  "#444444",   # 강조 텍스트
+        "FG_GREEN":   "#1b7c34",   # 숫자 리터럴 (진한 초록, 흰 배경 대비)
+        "FG_RED":     "#d63031",   # 위험 요소 (선명한 빨강)
+        "FG_YELLOW":  "#c67c00",   # 변수 참조 (진한 호박색, 흰 배경 가독성)
+        "FG_PURPLE":  "#6c3db3",   # 수식 (짙은 보라, 흰 배경 대비)
         "SEL_BG":     "#cccccc",   # 선택 배경
         "BORDER":     "#bbbbbb",   # 경계선
     },
@@ -968,7 +972,7 @@ class LibEditorApp(tk.Tk):
             tag = self._value_tag(value, i)
             iid = self.param_tree.insert("", "end",
                                           values=(name, value),
-                                          tags=(tag,))
+                                          tags=tag)
             self._param_items.append(iid)
 
     def _show_param_list(self, param_list: list):
@@ -987,7 +991,7 @@ class LibEditorApp(tk.Tk):
             tag = self._value_tag(pe.value, i)
             iid = self.param_tree.insert("", "end",
                                           values=(pe.name, pe.value),
-                                          tags=(tag,))
+                                          tags=tag)
             self._param_items.append(iid)
 
     def _show_directive_list(self, directive_list: list):
@@ -1032,14 +1036,14 @@ class LibEditorApp(tk.Tk):
             # 중괄호 수식: 사칙연산 포함 여부로 expr/var 구분
             stripped = value.strip("{} ")
             if any(op in stripped for op in ["+", "-", "*", "/"]):
-                return "expr"
-            return "var"
+                return (base, "expr")
+            return (base, "var")
         try:
             float(value)
-            return "num"   # float 변환 성공 → 숫자 리터럴
+            return (base, "num")   # float 변환 성공 → 숫자 리터럴
         except ValueError:
             pass
-        return base  # 기타 → 홀짝 배경
+        return (base,)  # 기타 → 홀짝 배경만
 
     def _clear_param_table(self):
         """
@@ -1112,7 +1116,7 @@ class LibEditorApp(tk.Tk):
             # 새 값에 맞게 색상 태그 재적용
             row_idx = self.param_tree.index(item_id)
             tag = self._value_tag(new_value.strip(), row_idx)
-            self.param_tree.item(item_id, tags=(tag,))
+            self.param_tree.item(item_id, tags=tag)
 
     def _rename_param_key(self, old_name: str, new_name: str):
         """
@@ -1243,7 +1247,7 @@ class LibEditorApp(tk.Tk):
                 model.params[pname] = pval          # 데이터 모델에 추가
                 row_idx = len(self._param_items)
                 tag = self._value_tag(pval, row_idx)
-                iid = self.param_tree.insert("", "end", values=(pname, pval), tags=(tag,))
+                iid = self.param_tree.insert("", "end", values=(pname, pval), tags=tag)
                 self._param_items.append(iid)
                 self.param_tree.see(iid)            # 새 행이 보이도록 스크롤
 
@@ -1258,7 +1262,7 @@ class LibEditorApp(tk.Tk):
                 param_list.append(ParamEntry(name=pname, value=pval))
                 row_idx = len(self._param_items)
                 tag = self._value_tag(pval, row_idx)
-                iid = self.param_tree.insert("", "end", values=(pname, pval), tags=(tag,))
+                iid = self.param_tree.insert("", "end", values=(pname, pval), tags=tag)
                 self._param_items.append(iid)
                 self.param_tree.see(iid)
                 self._rebuild_tree()  # 트리뷰에도 새 변수 반영
