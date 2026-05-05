@@ -1,6 +1,6 @@
-# lib-editor
+# library-editor
 
-> **v1.2.0** — Python · Tkinter 기반 Smart Spice `.lib` 모델 파일 편집 GUI 도구
+> **v1.2.1** — Python · Tkinter 기반 Smart Spice `.lib` 모델 파일 편집 GUI 도구
 
 ---
 
@@ -66,19 +66,18 @@ Smart Spice는 소자 특성 데이터를 `.lib` 파일 형식으로 관리하�
 ## 프로젝트 구조
 
 ```
-lib-editor/
+library-editor/
 ├── main.py                 # 메인 GUI 애플리케이션 (Tkinter) — 진입점
 ├── README.md               # 개발 배경·구현 사항 (이 문서)
+├── library-editor.ico      # Windows 실행파일 아이콘
+├── build.spec              # PyInstaller 빌드 설정 (아이콘 임베드)
 ├── src/                    # Python 소스 모듈
 │   ├── data_model.py       # 데이터 클래스: LibFile, LibBlock, ModelEntry 등
 │   ├── lib_parser.py       # .lib 파일 파서 (텍스트 → LibFile 객체)
 │   ├── lib_writer.py       # 직렬화기 (LibFile 객체 → Smart Spice 텍스트)
 │   └── excel_exporter.py   # Excel 내보내기 (LibFile → .xlsx)
-├── samples/                # 테스트용 예제 .lib 파일
-│   └── sample.lib
-├── docs/                   # 문서
-│   └── 사용설명서.md        # 처음 사용하는 분들을 위한 단계별 안내서
-└── build.spec              # PyInstaller 빌드 설정
+└── samples/                # 테스트용 예제 .lib 파일
+    └── sample.lib
 ```
 
 ---
@@ -98,11 +97,24 @@ pip install openpyxl
 ## 실행 방법
 
 ```bash
-cd lib-editor
+cd library-editor
 python3 main.py
 ```
 
 실행 후 툴바의 **📂 파일 열기** 버튼을 클릭하여 `.lib` 파일을 불러옵니다.
+
+---
+
+## Windows 실행파일 빌드
+
+PyInstaller로 `.lib` 파일 편집기를 단일 `.exe`로 패키징할 수 있습니다. 빌드 시 `library-editor.ico`가 실행파일에 임베드됩니다.
+
+```bash
+pip install pyinstaller openpyxl
+pyinstaller build.spec
+```
+
+빌드 결과물은 `dist/library-editor.exe` 에 생성됩니다.
 
 ---
 
@@ -158,6 +170,7 @@ python3 main.py
 
 | 버전 | 변경 내용 |
 |------|----------|
+| v1.2.1 | PyInstaller 빌드 spec 정비 — `library-editor.ico` 임베드, EXE 이름 `library-editor` 통일 |
 | v1.2.0 | 프로젝트명 lib-editor 변경, 폴더 구조 재편(src/docs/samples), 색상 가독성 개선 |
 | v1.1.0 | 다크/라이트 테마 전환, 코드 상세 주석, README·사용설명서 정비 |
 | v1.0.0 | 초기 릴리즈 — 파싱·편집·일괄 수정·Excel 내보내기 |

@@ -2,6 +2,11 @@
 CLAUDE.md
 AGENTS.md
 
+# 개발 가이드 / 템플릿 — Git에 업로드 금지 (INSTRUCTION.md 정책)
+INSTRUCTION.md
+README_template.md
+docs/
+
 # Python 캐시
 __pycache__/
 *.pyc
