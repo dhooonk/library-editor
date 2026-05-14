@@ -37,6 +37,30 @@ from lib_parser import parse_lib
 from lib_writer import save_lib, write_lib
 from excel_exporter import export_lib_to_excel
 
+# ─────────────────────────────────────────────────────────────────────────────
+# 윈도우 아이콘 설정 (작업표시줄 + 타이틀바 좌상단 아이콘 통일)
+# ─────────────────────────────────────────────────────────────────────────────
+def _icon_path() -> str:
+    """library-editor.ico 의 절대 경로를 반환.
+    PyInstaller 로 패키지된 경우 sys._MEIPASS 임시폴더에서, 개발 모드에서는
+    main.py 가 있는 폴더에서 찾는다."""
+    base = getattr(sys, "_MEIPASS", os.path.dirname(os.path.abspath(__file__)))
+    return os.path.join(base, "library-editor.ico")
+
+def _apply_window_icon(window) -> None:
+    """주어진 Tk/Toplevel 창에 library-editor.ico 를 적용한다.
+    플랫폼/포맷 미지원 시 조용히 무시한다."""
+    path = _icon_path()
+    if not os.path.exists(path):
+        return
+    try:
+        window.iconbitmap(default=path)   # Windows: 자식 Toplevel 포함 일괄 적용
+    except Exception:
+        try:
+            window.iconbitmap(path)       # default 미지원 환경 폴백
+        except Exception:
+            pass
+
 # ═════════════════════════════════════════════════════════════════════════════
 # 테마 색상 팔레트 정의
 # ─────────────────────────────────────────────────────────────────────────────
@@ -243,6 +267,7 @@ class LibEditorApp(tk.Tk):
 
     def __init__(self):
         super().__init__()
+        _apply_window_icon(self)
         self.title("Lib. Editor")
         self.geometry("1280x780")
         self.minsize(900, 600)
@@ -1483,6 +1508,7 @@ class ParamAddDialog(tk.Toplevel):
 
     def __init__(self, parent, title="파라미터 추가"):
         super().__init__(parent)
+        _apply_window_icon(self)
         self.title(title)
         self.result = None       # 확인 시 (name, value) 튜플로 갱신
         self.resizable(False, False)
@@ -1590,6 +1616,7 @@ class BatchEditDialog(tk.Toplevel):
 
     def __init__(self, parent, lib_file: LibFile, current_node):
         super().__init__(parent)
+        _apply_window_icon(self)
         self.title("일괄 파라미터 수정")
         self.result = None
         self.resizable(False, False)
@@ -1708,6 +1735,7 @@ class ParameterViewWindow(tk.Toplevel):
 
     def __init__(self, parent, lib_file: LibFile):
         super().__init__(parent)
+        _apply_window_icon(self)
         self.title("파라미터 중심 뷰")
         self.geometry("900x600")
         self.configure(bg=BG_DARK)
@@ -1834,5 +1862,14 @@ class ParameterViewWindow(tk.Toplevel):
 # 진입점 (Entry Point)
 # ═════════════════════════════════════════════════════════════════════════════
 if __name__ == "__main__":
+    # Windows 작업표시줄에서 python.exe 와 분리된 아이콘으로 표시되게 함
+    if sys.platform == "win32":
+        try:
+            import ctypes
+            ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(
+                "smartspice.libeditor"
+            )
+        except Exception:
+            pass
     app = LibEditorApp()
     app.mainloop()

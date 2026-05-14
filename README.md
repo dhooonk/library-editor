@@ -1,6 +1,6 @@
 # library-editor
 
-> **v1.2.1** — Python · Tkinter 기반 Smart Spice `.lib` 모델 파일 편집 GUI 도구
+> **v1.2.2** — Python · Tkinter 기반 Smart Spice `.lib` 모델 파일 편집 GUI 도구
 
 ---
 
@@ -50,6 +50,7 @@ Smart Spice는 소자 특성 데이터를 `.lib` 파일 형식으로 관리하�
 - **테마 전환**: Light ↔ Dark 모드 실시간 전환
 - **일괄 수정 (BatchEditDialog)**: 파라미터명 + 새 값 + 적용 범위 선택
 - **파라미터 중심 뷰 (ParameterViewWindow)**: 선택 파라미터의 LIB/모델별 값 비교
+- **창 아이콘 통일**: 메인 창·모든 다이얼로그 타이틀바와 Windows 작업표시줄에 `library-editor.ico` 적용 (개발 모드·PyInstaller 빌드 공통)
 
 ### 4. 파일 직렬화 (src/lib_writer.py)
 - `LibFile` 객체 → Smart Spice 문법 텍스트 역변환
@@ -170,6 +171,7 @@ pyinstaller build.spec
 
 | 버전 | 변경 내용 |
 |------|----------|
+| v1.2.2 | 메인 창·모든 Toplevel 다이얼로그 타이틀바와 Windows 작업표시줄 아이콘을 `library-editor.ico` 로 통일 (AppUserModelID 분리 포함) |
 | v1.2.1 | PyInstaller 빌드 spec 정비 — `library-editor.ico` 임베드, EXE 이름 `library-editor` 통일 |
 | v1.2.0 | 프로젝트명 lib-editor 변경, 폴더 구조 재편(src/docs/samples), 색상 가독성 개선 |
 | v1.1.0 | 다크/라이트 테마 전환, 코드 상세 주석, README·사용설명서 정비 |
